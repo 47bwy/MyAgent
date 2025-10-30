@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.1.2/tailwind.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl text-center my-4">Login</h1>
+        <form id="login-form" class="space-y-4">
+            <label for="username" class="block text-lg">Username</label>
+            <input type="text" name="username" id="username" class="w-full p-2 border" required>
+            
+            <label for="password" class="block text-lg">Password</label>
+            <input type="password" name="password" id="password" class="w-full p-2 border" required>
+            
+            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded">Login</button>
+        </form>
+        
+        <div id="error" class="mt-4 text-center text-red-500"></div>
+        <div class="mt-4 text-center">
+            <a href="/auth/register" class="text-blue-500">Don't have an account? Register here</a>
+        </div>
+    </div>
+    <script>
+    document.getElementById('login-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        const resp = await fetch('/auth/login', {
+            method: 'POST',
+            body: data
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            localStorage.setItem('access_token', data.access_token);
+            // 登录成功，跳转到问答页面
+            window.location.href = '/';
+        } else {
+            const err = await resp.json();
+            document.getElementById('error').innerText = err.detail || '登录失败';
+        }
+    };
+    </script>
+</body>
+</html>

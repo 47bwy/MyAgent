@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.1.2/tailwind.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl text-center my-4">Register</h1>
+        <form id="register-form" class="space-y-4">
+            <label for="username" class="block text-lg">Username</label>
+            <input type="text" name="username" id="username" class="w-full p-2 border" required>
+            
+            <label for="email" class="block text-lg">Email</label>
+            <input type="email" name="email" id="email" class="w-full p-2 border" required>
+            
+            <label for="password" class="block text-lg">Password</label>
+            <input type="password" name="password" id="password" class="w-full p-2 border" required>
+            
+            <label for="confirm_password" class="block text-lg">Confirm Password</label>
+            <input type="password" name="confirm_password" id="confirm_password" class="w-full p-2 border" required>
+            
+            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded">Register</button>
+        </form>
+        
+        <div id="error" class="mt-4 text-center text-red-500"></div>
+        <div class="mt-4 text-center">
+            <a href="/auth/login" class="text-blue-500">Already have an account? Login here</a>
+        </div>
+    </div>
+    <script>
+    document.getElementById('register-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        const resp = await fetch('/auth/register', {
+            method: 'POST',
+            body: data
+        });
+        const errorDiv = document.getElementById('error');
+        errorDiv.innerText = '';
+        if (resp.ok) {
+            alert('注册成功！');
+            window.location.href = '/';
+        } else {
+            const err = await resp.json();
+            errorDiv.innerText = err.detail || '注册失败';
+        }
+    };
+    </script>
+</body>
+</html>

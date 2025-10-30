@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>问答系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.1.2/tailwind.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <div class="flex justify-between items-center mb-4">
+            <div id="user-info" class="text-lg text-gray-700"></div>
+            <div>
+                <button id="login-btn" class="bg-blue-500 text-white px-4 py-2 rounded hidden">登录</button>
+                <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded hidden">登出</button>
+            </div>
+        </div>
+        <h1 class="text-3xl text-center my-4">AI 问答系统</h1>
+        <div id="chat-history" class="mb-4 space-y-2"></div>
+        <form id="qa-form" class="space-y-4">
+            <label for="question" class="block text-lg">请输入你的问题：</label>
+            <input type="text" name="question" id="question" class="w-full p-2 border" required>
+            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded">提交问题</button>
+        </form>
+        <div id="result" class="mt-4 text-center text-green-600"></div>
+        <div id="error" class="mt-4 text-center text-red-500"></div>
+
+    </div>
+<script>
+async function showUserInfo() {
+    const token = localStorage.getItem('access_token');
+    const userInfoDiv = document.getElementById('user-info');
+    const logoutBtn = document.getElementById('logout-btn');
+    const loginBtn = document.getElementById('login-btn');
+    // alert('token: ' + token);
+    if (token) {
+        try {
+            const resp = await fetch('/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                userInfoDiv.innerText = `当前用户：${data.username}`;
+                logoutBtn.classList.remove('hidden');
+                loginBtn.classList.add('hidden');
+            } else {
+                userInfoDiv.innerText = '当前用户：访客';
+                logoutBtn.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
+            }
+        } catch {
+            userInfoDiv.innerText = '当前用户：访客';
+            logoutBtn.classList.add('hidden');
+            loginBtn.classList.remove('hidden');
+        }
+    } else {
+        userInfoDiv.innerText = '当前用户：访客';
+        logoutBtn.classList.add('hidden');
+        loginBtn.classList.remove('hidden');
+    }
+}
+
+document.getElementById('logout-btn').onclick = function() {
+    localStorage.removeItem('access_token');
+    window.location.href = '/auth/login';
+};
+document.getElementById('login-btn').onclick = function() {
+    window.location.href = '/auth/login';
+};
+
+const chatHistory = [];
+
+function renderChat() {
+    const chatDiv = document.getElementById('chat-history');
+    chatDiv.innerHTML = '';
+    chatHistory.forEach(item => {
+        chatDiv.innerHTML += `
+            <div class="flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}">
+                <div class="max-w-xl px-4 py-2 rounded-lg ${item.role === 'user' ? 'bg-blue-200 text-right' : 'bg-gray-200 text-left'}">
+                    <span>${item.content}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+document.getElementById('qa-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const question = form.question.value;
+    const data = new FormData(form);
+    const token = localStorage.getItem('access_token');
+    // 添加用户问题到历史
+    chatHistory.push({ role: 'user', content: question });
+    renderChat();
+    form.question.value = '';
+    const resp = await fetch('/qa/ask', {
+        method: 'POST',
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+        body: data
+    });
+    const resultDiv = document.getElementById('result');
+    const errorDiv = document.getElementById('error');
+    resultDiv.innerText = '';
+    errorDiv.innerText = '';
+    if (resp.ok) {
+        const res = await resp.json();
+        resultDiv.innerText = '任务已提交，正在处理...';
+        pollResult(res.task_id);
+    } else {
+        const err = await resp.json();
+        errorDiv.innerText = err.detail || '提交失败';
+    }
+};
+
+async function pollResult(task_id) {
+    const resultDiv = document.getElementById('result');
+    const errorDiv = document.getElementById('error');
+    let interval = setInterval(async () => {
+        const resp = await fetch(`/qa/ask/result/${task_id}`);
+        const data = await resp.json();
+        if (data.status === "success") {
+            // 添加AI答案到历史
+            chatHistory.push({ role: 'bot', content: data.answer });
+            renderChat();
+            resultDiv.innerText = '';
+            clearInterval(interval);
+        } else if (data.status === "failure") {
+            errorDiv.innerText = data.error || '任务失败';
+            clearInterval(interval);
+        }
+        // pending 状态继续轮询
+    }, 1500);
+}
+
+showUserInfo();
+</script>
+</body>
+</html>
