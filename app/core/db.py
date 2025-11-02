@@ -10,8 +10,21 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
+from app.core.logger import get_logger
 
-DATABASE_URL = settings.database_url  # SQLite 数据库路径
+logger = get_logger(__name__)
+
+# 获取数据库 URL，确保不为 None
+DATABASE_URL = settings.database_url or "sqlite:///./test.db"
+
+# 验证 DATABASE_URL
+if not DATABASE_URL:
+    raise ValueError(
+        "DATABASE_URL 未配置。请创建 .env 文件或设置环境变量。"
+        "可以从 env.example 复制模板。"
+    )
+
+logger.info(f"Database URL: {DATABASE_URL}")
 
 # 创建数据库引擎
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -24,9 +37,12 @@ Base = declarative_base()
 
 # 初始化数据库（创建表）
 def init_db():
+    # 导入所有模型以确保它们被注册到 Base.metadata
+    from app.models import User, Question  # noqa: F401
+    
     # 创建所有表
     Base.metadata.create_all(bind=engine)
-    print("Database initialized and tables created.")
+    logger.info("Database initialized and tables created.")
 
 # 获取数据库会话的函数
 def get_db():

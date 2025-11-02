@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.logger import get_logger
-from app.models import user
+from app.models import User
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 # 创建用户（注册）
 def create_user(db: Session, username: str, password: str, email: str):
     hashed_password = pwd_context.hash(password)
-    db_user = user.User(username=username, password_hash=hashed_password, email=email)
+    db_user = User(username=username, password_hash=hashed_password, email=email)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -57,7 +57,7 @@ def create_access_token(data: dict):
 
 # 获取用户
 def get_user(db: Session, username: str):
-    return db.query(user.User).filter(user.User.username == username).first()
+    return db.query(User).filter(User.username == username).first()
 
 # 访客提问限制（基于 Redis）
 def check_visitor_limit(user_id: str):

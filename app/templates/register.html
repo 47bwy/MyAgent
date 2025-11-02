@@ -34,19 +34,46 @@
     document.getElementById('register-form').onsubmit = async function(e) {
         e.preventDefault();
         const form = e.target;
-        const data = new FormData(form);
+        const formData = new FormData(form);
+        
+        // 将 FormData 转换为 JSON 对象
+        const jsonData = {
+            username: formData.get('username'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            confirm_password: formData.get('confirm_password')
+        };
+        
         const resp = await fetch('/auth/register', {
             method: 'POST',
-            body: data
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
         });
+        
         const errorDiv = document.getElementById('error');
         errorDiv.innerText = '';
+        
         if (resp.ok) {
             alert('注册成功！');
             window.location.href = '/';
         } else {
             const err = await resp.json();
-            errorDiv.innerText = err.detail || '注册失败';
+            // 处理 Pydantic 验证错误（可能是数组格式）
+            let errorMsg = '注册失败';
+            if (err.detail) {
+                if (Array.isArray(err.detail)) {
+                    // Pydantic 验证错误是数组格式，显示所有错误
+                    errorMsg = err.detail.map(e => {
+                        const field = e.loc.slice(1).join('.'); // 去掉 'body' 前缀
+                        return `${field}: ${e.msg}`;
+                    }).join('; ');
+                } else {
+                    errorMsg = err.detail;
+                }
+            }
+            errorDiv.innerText = errorMsg;
         }
     };
     </script>

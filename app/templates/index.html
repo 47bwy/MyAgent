@@ -87,28 +87,52 @@ document.getElementById('qa-form').onsubmit = async function(e) {
     e.preventDefault();
     const form = e.target;
     const question = form.question.value;
-    const data = new FormData(form);
     const token = localStorage.getItem('access_token');
+    
+    // 将问题转换为 JSON 对象
+    const jsonData = {
+        question: question
+    };
+    
     // 添加用户问题到历史
     chatHistory.push({ role: 'user', content: question });
     renderChat();
     form.question.value = '';
+    
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+    
     const resp = await fetch('/qa/ask', {
         method: 'POST',
-        headers: token ? { 'Authorization': 'Bearer ' + token } : {},
-        body: data
+        headers: headers,
+        body: JSON.stringify(jsonData)
     });
+    
     const resultDiv = document.getElementById('result');
     const errorDiv = document.getElementById('error');
     resultDiv.innerText = '';
     errorDiv.innerText = '';
+    
     if (resp.ok) {
         const res = await resp.json();
         resultDiv.innerText = '任务已提交，正在处理...';
         pollResult(res.task_id);
     } else {
         const err = await resp.json();
-        errorDiv.innerText = err.detail || '提交失败';
+        // 处理 Pydantic 验证错误
+        let errorMsg = '提交失败';
+        if (err.detail) {
+            if (Array.isArray(err.detail)) {
+                errorMsg = err.detail.map(e => `${e.loc.join('.')}: ${e.msg}`).join('; ');
+            } else {
+                errorMsg = err.detail;
+            }
+        }
+        errorDiv.innerText = errorMsg;
     }
 };
 

@@ -28,11 +28,23 @@
     document.getElementById('login-form').onsubmit = async function(e) {
         e.preventDefault();
         const form = e.target;
-        const data = new FormData(form);
+        const formData = new FormData(form);
+        
+        // 将 FormData 转换为 JSON 对象
+        const jsonData = {
+            username: formData.get('username'),
+            password: formData.get('password')
+        };
+        
         const resp = await fetch('/auth/login', {
             method: 'POST',
-            body: data
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
         });
+        
+        const errorDiv = document.getElementById('error');
         if (resp.ok) {
             const data = await resp.json();
             localStorage.setItem('access_token', data.access_token);
@@ -40,7 +52,17 @@
             window.location.href = '/';
         } else {
             const err = await resp.json();
-            document.getElementById('error').innerText = err.detail || '登录失败';
+            // 处理 Pydantic 验证错误（可能是数组格式）
+            let errorMsg = '登录失败';
+            if (err.detail) {
+                if (Array.isArray(err.detail)) {
+                    // Pydantic 验证错误是数组格式
+                    errorMsg = err.detail.map(e => `${e.loc.join('.')}: ${e.msg}`).join('; ');
+                } else {
+                    errorMsg = err.detail;
+                }
+            }
+            errorDiv.innerText = errorMsg;
         }
     };
     </script>

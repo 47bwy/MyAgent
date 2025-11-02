@@ -9,15 +9,23 @@ import os
 
 from dotenv import load_dotenv
 
+# 加载 .env 文件
 load_dotenv()
 
 
 class Settings:
-    broker_url: str = os.getenv("broker_url")
-    backend_url: str = os.getenv("backend_url")
-    local_model: str = os.getenv("local_model")
-    database_url: str = os.getenv("database_url")
-    SECRET_KEY: str = os.getenv("SECRET_KEY")
-    ALGORITHM: str = os.getenv("ALGORITHM")
+    # Celery 配置（带默认值）
+    broker_url: str = os.getenv("broker_url", "redis://localhost:6379/0")
+    backend_url: str = os.getenv("backend_url", "redis://localhost:6379/0")
+    
+    # 模型配置
+    local_model: str = os.getenv("local_model", "./models/bert-base-chinese")
+    
+    # 数据库配置（带默认值）
+    database_url: str = os.getenv("database_url", "sqlite:///./test.db")
+    
+    # JWT 配置
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
 
 settings = Settings()

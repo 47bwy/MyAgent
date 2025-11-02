@@ -4,9 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+debugpy = "*"
+pytest = "*"
+pytest-asyncio = "*"
+httpx = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3.8"
 
 [packages]
 toml = "*"

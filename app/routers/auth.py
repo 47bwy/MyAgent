@@ -5,7 +5,7 @@
 @Desc    :   None
 '''
 
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -23,35 +23,54 @@ router = APIRouter()
 # 注册用户
 @router.post("/register")
 def register_user(
-    username: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    confirm_password: str = Form(...),
+    user_data: UserCreate,  # 使用 Pydantic 模型，自动进行类型和格式校验
     db: Session = Depends(db.get_db)
 ):
-    # 校验密码是否一致
-    if password != confirm_password:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
+    """
+    注册新用户
     
-    # 检查用户名是否已存在
-    db_user = auth.get_user(db, username=username)
+    Pydantic 已自动校验：
+    - username: 3-50个字符，只能包含字母、数字和下划线
+    - email: 正确的邮箱格式
+    - password: 至少8个字符，包含数字和字母
+    - confirm_password: 与 password 匹配
+    """
+    # 检查用户名是否已存在（业务逻辑校验，需要查询数据库）
+    db_user = auth.get_user(db, username=user_data.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     
+    # 检查邮箱是否已存在（可选，如果需要的话）
+    # db_user_by_email = auth.get_user_by_email(db, email=user_data.email)
+    # if db_user_by_email:
+    #     raise HTTPException(status_code=400, detail="Email already registered")
+    
     # 创建新用户
-    new_user = auth.create_user(db=db, username=username, password=password, email=email)
+    new_user = auth.create_user(
+        db=db, 
+        username=user_data.username, 
+        password=user_data.password, 
+        email=user_data.email
+    )
     
     return {"message": "User registered successfully", "username": new_user.username}
+
 
 # 登录用户
 @router.post("/login")
 def login_user(
-    username: str = Form(...),  # 使用 Form 接收表单数据
-    password: str = Form(...),
+    user_data: UserLogin,  # 使用 Pydantic 模型，自动进行类型和格式校验
     db: Session = Depends(db.get_db)
 ):
-    db_user = auth.get_user(db, username=username)
-    if not db_user or not auth.verify_password(password, db_user.password_hash):
+    """
+    用户登录
+    
+    Pydantic 已自动校验：
+    - username: 至少1个字符
+    - password: 至少1个字符
+    """
+    db_user = auth.get_user(db, username=user_data.username)
+    if not db_user or not auth.verify_password(user_data.password, db_user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     # 生成 JWT token

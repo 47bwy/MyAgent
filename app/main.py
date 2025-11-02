@@ -10,7 +10,6 @@ from fastapi.templating import Jinja2Templates
 
 from app.core.logger import get_logger, setup_logging
 from app.core.db import init_db
-from app.models.user import User
 from app.routers import auth, qa
 from app.routers.auth import get_current_user
 

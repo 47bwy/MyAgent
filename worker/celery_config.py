@@ -20,8 +20,11 @@ task_acks_late = True
 worker_prefetch_multiplier = 1
 task_reject_on_worker_lost = True
 
-# task_default_queue = 'qa_queue'
-# task_routes = {'worker.tasks.answer_question_task': {'queue': 'qa_queue'}}
+# 任务路由配置：将任务发送到指定队列
+task_default_queue = 'qa_queue'
+task_routes = {
+    'worker.tasks.answer_question_task': {'queue': 'qa_queue'}
+}
 
 # 可选：生产环境建议开启
 worker_max_tasks_per_child = 100
