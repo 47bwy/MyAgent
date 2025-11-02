@@ -46,12 +46,7 @@ def register_user(
     #     raise HTTPException(status_code=400, detail="Email already registered")
     
     # 创建新用户
-    new_user = auth.create_user(
-        db=db, 
-        username=user_data.username, 
-        password=user_data.password, 
-        email=user_data.email
-    )
+    new_user = auth.create_user(db=db, user_data=user_data)
     
     return {"message": "User registered successfully", "username": new_user.username}
 

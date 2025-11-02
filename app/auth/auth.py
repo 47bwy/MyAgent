@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.models import User
+from app.schemas.user import UserCreate
 
 logger = get_logger(__name__)
 
@@ -35,9 +36,19 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 3600  # Token 过期时间
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 # 创建用户（注册）
-def create_user(db: Session, username: str, password: str, email: str):
-    hashed_password = pwd_context.hash(password)
-    db_user = User(username=username, password_hash=hashed_password, email=email)
+def create_user(db: Session, user_data: UserCreate):
+    """
+    创建新用户
+    
+    参数:
+        db: 数据库会话
+        user_data: UserCreate Pydantic 模型，已包含验证通过的用户数据
+    
+    返回:
+        创建的 User 数据库模型实例
+    """
+    hashed_password = pwd_context.hash(user_data.password)
+    db_user = User(username=user_data.username, password_hash=hashed_password, email=user_data.email)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
